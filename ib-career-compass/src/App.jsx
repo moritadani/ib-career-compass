@@ -690,7 +690,7 @@ export default function CareerCompass() {
     const satLabel    = satEnabled ? SAT_LABELS[sat] : "Not provided";
  
     const callAPI = async (prompt) => {
-      const res = await fetch("/api/chat", {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 4000, messages: [{ role: "user", content: prompt }] }),
@@ -1069,3 +1069,17 @@ export default function CareerCompass() {
                   </div>
                 </>
               )}
+ 
+              <div style={S.resetRow}>
+                <button style={{ background: "none", border: "1px solid rgba(10,10,15,0.16)", borderRadius: 12, padding: "10px 20px", fontFamily: "'DM Sans',sans-serif", fontSize: 13, color: "#6b6b80", cursor: "pointer" }} onClick={restart}>
+                  ↺ Start over with different answers
+                </button>
+              </div>
+            </div>
+          )}
+ 
+        </div>
+      </div>
+    </div>
+  );
+}
