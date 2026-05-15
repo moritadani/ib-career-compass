@@ -685,7 +685,7 @@ export default function CareerCompass() {
     const abroadLabel = ABROAD_LABELS[abroad];
  
     const callAPI = async (prompt) => {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
+      const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ model:"claude-sonnet-4-6", max_tokens:8000, messages:[{ role:"user", content:prompt }] }),
