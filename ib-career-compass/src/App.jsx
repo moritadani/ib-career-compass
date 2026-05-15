@@ -690,7 +690,7 @@ export default function CareerCompass() {
     const satLabel    = satEnabled ? SAT_LABELS[sat] : "Not provided";
  
     const callAPI = async (prompt) => {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
+      const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 4000, messages: [{ role: "user", content: prompt }] }),
