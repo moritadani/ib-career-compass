@@ -423,7 +423,7 @@ Return ONLY valid JSON, no markdown fences, no extra text:
     }
   ]
 }
-Return 8 universities spread across countries (respecting abroad preference: ${abroad}). IB requirements must be precise and realistic. Keep application_tips to 1 sentence max. Be extremely concise.`;
+Return 8 universities spread across countries (respecting abroad preference: ${abroad}). IB requirements must be precise and realistic. Keep application_tips to 1 sentence max. Be extremely concise. Use the most recent QS World University Rankings available (2025 or 2026).`;
  
 /* ─── MAIN COMPONENT ──────────────────────────────────── */
 export default function IBCareerCompass() {
