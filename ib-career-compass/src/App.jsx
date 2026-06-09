@@ -391,7 +391,7 @@ Return ONLY valid JSON, no markdown fences, no extra text:
     }
   ]
 }
-Return exactly 10 careers and exactly 6 ai_resilient entries. Keep all text fields to 1 sentence max. Be extremely concise.`;
+Return exactly 5 careers and exactly 5 ai_resilient entries. Keep all text fields to 1 sentence max. Be extremely concise.`;
  
 const buildUnisPrompt = (sel, abroad, score, dream, careersInMind, careers) =>
 `You are an expert university admissions advisor for IB Diploma students.
@@ -423,7 +423,7 @@ Return ONLY valid JSON, no markdown fences, no extra text:
     }
   ]
 }
-Return 8 universities spread across countries (respecting abroad preference: ${abroad}). IB requirements must be precise and realistic. Keep application_tips to 1 sentence max. Be extremely concise. Use the most recent QS World University Rankings available (2025 or 2026).`;
+Return 7 universities spread across countries (respecting abroad preference: ${abroad}). IB requirements must be precise and realistic. Keep application_tips to 1 sentence max. Be extremely concise. Use the most recent QS World University Rankings available (2025 or 2026).`;
  
 /* ─── MAIN COMPONENT ──────────────────────────────────── */
 export default function IBCareerCompass() {
