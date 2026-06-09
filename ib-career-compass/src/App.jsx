@@ -366,7 +366,7 @@ AI-era label — use exactly one: "AI-Augmented" (grows with AI), "AI-Evolving" 
  
 Return ONLY valid JSON, no markdown fences, no extra text:
 {
-  "summary": "Warm 2-3 sentence personalised summary referencing the student's IB strengths and AI-era potential.",
+  "summary": "Warm 1-2 sentence personalised summary referencing the student's IB strengths and AI-era potential.",
   "careers": [
     {
       "title": "Career title",
@@ -391,7 +391,7 @@ Return ONLY valid JSON, no markdown fences, no extra text:
     }
   ]
 }
-Return exactly 10 careers and exactly 6 ai_resilient entries. Keep all text fields concise (1-3 sentences max).`;
+Return exactly 10 careers and exactly 6 ai_resilient entries. Keep all text fields to 1 sentence max. Be extremely concise.`;
  
 const buildUnisPrompt = (sel, abroad, score, dream, careersInMind, careers) =>
 `You are an expert university admissions advisor for IB Diploma students.
@@ -423,7 +423,7 @@ Return ONLY valid JSON, no markdown fences, no extra text:
     }
   ]
 }
-Return 8 universities spread across countries (respecting abroad preference: ${abroad}). IB requirements must be precise and realistic. Keep application_tips concise.`;
+Return 8 universities spread across countries (respecting abroad preference: ${abroad}). IB requirements must be precise and realistic. Keep application_tips to 1 sentence max. Be extremely concise.`;
  
 /* ─── MAIN COMPONENT ──────────────────────────────────── */
 export default function IBCareerCompass() {
@@ -500,7 +500,7 @@ export default function IBCareerCompass() {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       model: "claude-sonnet-4-5",
-      max_tokens: 2000,
+      max_tokens: 4000,
       messages: [{ role: "user", content: prompt }],
     }),
   });
