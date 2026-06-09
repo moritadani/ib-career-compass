@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
  
 /* ─── DATA ─────────────────────────────────────────────── */
 const IB_GROUPS = [
@@ -286,6 +286,11 @@ const S = {
   legendItem: { display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "#6b6b80" },
   legendDot: (bg) => ({ width: 8, height: 8, borderRadius: "50%", background: bg }),
   badgeRow: { display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 },
+  resilientCard: {
+    border: "1px solid rgba(10,10,15,0.08)", borderRadius: 20,
+    padding: "1.1rem 1.4rem", background: "#f8fdf9", marginBottom: 10,
+    borderLeft: "3px solid #0ea47a",
+  },
 };
  
 function pill(text, type) {
@@ -371,14 +376,22 @@ Return ONLY valid JSON, no markdown fences, no extra text:
       "why_fit": "2-3 sentences on fit with this student's specific IB subjects, skills and interests.",
       "daily_life": "1-2 sentences on a typical day by 2030.",
       "outlook": "e.g. Strong — AI expands demand ~25% by 2030",
-      "salary_range": "e.g. $70k–$160k USD",
+      "salary_range": "e.g. $70k–$160k USD (always express in USD)",
       "ib_subjects": ["Subject 1", "Subject 2"],
       "degrees": ["Degree 1", "Degree 2"]
     }
   ],
-  "action_plan": ["Step 1", "Step 2", "Step 3", "Step 4", "Step 5"]
+  "action_plan": ["Step 1", "Step 2", "Step 3", "Step 4", "Step 5"],
+  "ai_resilient": [
+    {
+      "title": "Career or major title",
+      "reason": "1-2 sentences on why AI is unlikely to replace this in the next 10 years.",
+      "fit": "1 sentence on how this connects to the student's profile.",
+      "majors": ["Relevant degree 1", "Relevant degree 2"]
+    }
+  ]
 }
-Return exactly 4 careers. Keep all text fields concise (1-3 sentences max).`;
+Return exactly 10 careers and exactly 4 ai_resilient entries. Keep all text fields concise (1-3 sentences max).`;
  
 const buildUnisPrompt = (sel, abroad, score, dream, careersInMind, careers) =>
 `You are an expert university admissions advisor for IB Diploma students.
@@ -395,15 +408,22 @@ Return ONLY valid JSON, no markdown fences, no extra text:
       "city": "City",
       "for_career": "Which career above this best suits",
       "competitiveness": "High",
+      "qs_ranking": "e.g. #12 globally (QS World University Rankings 2024)",
+      "qs_subject_ranking": "e.g. #5 in Engineering & Technology (QS Subject Rankings 2024)",
       "acceptance_rate": "~8%",
+      "intl_student_rate": "e.g. ~32% international students",
       "ib_requirement": "e.g. 38+ pts, 7,6,6 at HL including Maths AA and Chemistry",
+      "sat_requirement": "e.g. 1450–1580 (if applicable; write 'Not required' if the university does not use SAT)",
+      "tuition_fees": "e.g. $55,000 USD/year (international students; always express in USD)",
+      "cost_of_living": "e.g. ~$1,200–1,600 USD/month (housing, food, transport; always express in USD)",
       "notable_programs": ["Program 1", "Program 2"],
       "application_tips": "3-4 concise tips referencing IB Extended Essay, TOK, CAS, HL choices and AI-readiness signals.",
+      "language_requirements": "State the primary language of instruction. If non-English, name it and list any required proficiency test (e.g. DELF B2, DSH-2, HSK 5). If English-medium, list IELTS/TOEFL minimums. Note if bilingual or English-track options exist.",
       "scholarships": "Key scholarships"
     }
   ]
 }
-Return 5-6 universities spread across countries (respecting abroad preference: ${abroad}). IB requirements must be precise and realistic. Keep application_tips concise.`;
+Return 8 universities spread across countries (respecting abroad preference: ${abroad}). IB requirements must be precise and realistic. Keep application_tips concise.`;
  
 /* ─── MAIN COMPONENT ──────────────────────────────────── */
 export default function IBCareerCompass() {
@@ -414,8 +434,49 @@ export default function IBCareerCompass() {
   const [dream, setDream] = useState("");
   const [careersInMind, setCareersInMind] = useState("");
   const [loading, setLoading] = useState(false);
+  const [pdfDownloading, setPdfDownloading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
+  const resultsRef = useRef(null);
+ 
+  // Dynamically load a script tag once
+  const loadScript = (src) => new Promise((resolve, reject) => {
+    if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
+    const s = document.createElement("script");
+    s.src = src; s.onload = resolve; s.onerror = reject;
+    document.head.appendChild(s);
+  });
+ 
+  const downloadPDF = async () => {
+    if (!resultsRef.current) return;
+    setPdfDownloading(true);
+    try {
+      await loadScript("https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js");
+      await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js");
+      const { jsPDF } = window.jspdf;
+      const canvas = await window.html2canvas(resultsRef.current, {
+        scale: 2, useCORS: true, backgroundColor: "#f4f3f8", logging: false,
+      });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const imgW = pageW;
+      const imgH = (canvas.height * imgW) / canvas.width;
+      let yOffset = 0;
+      let remaining = imgH;
+      while (remaining > 0) {
+        pdf.addImage(imgData, "PNG", 0, -yOffset, imgW, imgH);
+        remaining -= pageH;
+        if (remaining > 0) { pdf.addPage(); yOffset += pageH; }
+      }
+      pdf.save("IB-Career-Compass-Report.pdf");
+    } catch (e) {
+      alert("PDF generation failed: " + e.message);
+    } finally {
+      setPdfDownloading(false);
+    }
+  };
  
   const toggle = useCallback((key, val) => {
     setSel(prev => {
@@ -433,23 +494,21 @@ export default function IBCareerCompass() {
     const abroadLabel = ABROAD_LABELS[abroad];
     const scoreLabel  = SCORE_LABELS[score];
  
-const callAPI = async (prompt) => {
-  const res = await fetch("/api/chat", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-5",
-      max_tokens: 4000,
-      messages: [{ role: "user", content: prompt }],
-    }),
-  });
-  if (!res.ok) throw new Error(`API error ${res.status}`);
-  const data = await res.json();
-  const raw = data.content.map(i => i.text || "").join("").trim();
-  const match = raw.match(/\{[\s\S]*\}/);
-  if (!match) throw new Error("No JSON found in response");
-  return JSON.parse(match[0]);
-};
+    const callAPI = async (prompt) => {
+      const res = await fetch("api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 6000,
+          messages: [{ role: "user", content: prompt }],
+        }),
+      });
+      if (!res.ok) throw new Error(`API error ${res.status}`);
+      const data = await res.json();
+      const raw = data.content.map(i => i.text || "").join("");
+      return JSON.parse(raw.replace(/```json[\s\S]*?```|```/g, "").trim());
+    };
  
     try {
       // Call 1: careers, summary, action plan
@@ -623,7 +682,7 @@ const callAPI = async (prompt) => {
             <div>
               {error && <div style={S.errBox}><strong>Something went wrong.</strong> Please try again. ({error})</div>}
               {result && (
-                <>
+                <div ref={resultsRef}>
                   {result.summary && (
                     <div style={S.resultsBanner}>
                       <div style={S.resultsBannerGlow} />
@@ -675,9 +734,18 @@ const callAPI = async (prompt) => {
                         <CompBadge level={u.competitiveness} />
                       </div>
                       <div style={S.uniMeta}>
+                        {u.qs_ranking && <div style={S.metaItem}><strong style={S.metaStrong}>🏅 {u.qs_ranking}</strong>QS World Ranking</div>}
+                        {u.qs_subject_ranking && <div style={S.metaItem}><strong style={S.metaStrong}>📐 {u.qs_subject_ranking}</strong>QS Subject Ranking</div>}
                         <div style={S.metaItem}><strong style={S.metaStrong}>{u.acceptance_rate}</strong>Acceptance rate</div>
+                        {u.intl_student_rate && <div style={S.metaItem}><strong style={S.metaStrong}>{u.intl_student_rate}</strong>International students</div>}
                         <div style={S.metaItem}><strong style={S.metaStrong}>{u.ib_requirement}</strong>IB requirement</div>
+                        {u.sat_requirement && <div style={S.metaItem}><strong style={S.metaStrong}>{u.sat_requirement}</strong>SAT requirement</div>}
+                        {u.tuition_fees && <div style={S.metaItem}><strong style={S.metaStrong}>{u.tuition_fees}</strong>Tuition fees</div>}
+                        {u.cost_of_living && <div style={S.metaItem}><strong style={S.metaStrong}>{u.cost_of_living}</strong>Cost of living</div>}
                         <div style={{ ...S.metaItem, gridColumn: "1/-1" }}><strong style={S.metaStrong}>{(u.notable_programs || []).join(", ")}</strong>Notable programs</div>
+                        {u.language_requirements && (
+                          <div style={{ ...S.metaItem, gridColumn: "1/-1" }}><strong style={S.metaStrong}>🗣 {u.language_requirements}</strong>Language requirements</div>
+                        )}
                       </div>
                       <div style={S.uniTips}>
                         <strong style={{ color: "#2d2d3a", fontWeight: 500 }}>How to get in:</strong> {u.application_tips}
@@ -697,9 +765,42 @@ const callAPI = async (prompt) => {
                       ))}
                     </>
                   )}
-                </>
+ 
+                  {result.ai_resilient && result.ai_resilient.length > 0 && (
+                    <>
+                      <div style={{ ...S.sectionTitle, marginTop: "1.5rem" }}>
+                        <span style={{ ...S.sectionBar, background: "#0ea47a" }} /> Careers &amp; majors least impacted by AI
+                      </div>
+                      <div style={{ ...S.aiFutureBanner, marginBottom: "1rem" }}>
+                        <span style={{ fontSize: 18, flexShrink: 0, marginTop: 1 }}>🛡</span>
+                        <div>These paths rely on deeply human skills — creativity, physical presence, emotional intelligence, ethical judgment — that AI is unlikely to replace within the next 10 years. Consider them as alternatives or complements to your main recommendations.</div>
+                      </div>
+                      {result.ai_resilient.map((r, i) => (
+                        <div key={i} style={S.resilientCard}>
+                          <div style={{ ...S.careerName, marginBottom: 6 }}>{r.title}</div>
+                          <div style={S.careerBody}>
+                            <p style={{ marginBottom: 5 }}><strong style={{ color: "#2d2d3a", fontWeight: 500 }}>Why AI-resilient:</strong> {r.reason}</p>
+                            <p style={{ marginBottom: 8 }}><strong style={{ color: "#2d2d3a", fontWeight: 500 }}>Fits your profile:</strong> {r.fit}</p>
+                            <div style={S.badgeRow}>
+                              {(r.majors || []).map(m => <span key={m}>{pill(m, "green")}</span>)}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  )}
+                </div>
               )}
-              <div style={S.resetRow}>
+              <div style={{ ...S.resetRow, display: "flex", justifyContent: "center", gap: 12, flexWrap: "wrap" }}>
+                {result && (
+                  <button
+                    style={{ background: "#0a0a0f", border: "none", borderRadius: 12, padding: "10px 22px", fontFamily: "'Syne',sans-serif", fontSize: 13, fontWeight: 700, color: "#fff", cursor: pdfDownloading ? "not-allowed" : "pointer", opacity: pdfDownloading ? 0.7 : 1, display: "flex", alignItems: "center", gap: 7 }}
+                    onClick={downloadPDF}
+                    disabled={pdfDownloading}
+                  >
+                    {pdfDownloading ? "⏳ Generating PDF…" : "⬇ Download report as PDF"}
+                  </button>
+                )}
                 <button style={{ background: "none", border: "1px solid rgba(10,10,15,0.16)", borderRadius: 12, padding: "10px 20px", fontFamily: "'DM Sans',sans-serif", fontSize: 13, color: "#6b6b80", cursor: "pointer" }} onClick={restart}>
                   ↺ Start over with different answers
                 </button>
