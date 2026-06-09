@@ -494,21 +494,23 @@ export default function IBCareerCompass() {
     const abroadLabel = ABROAD_LABELS[abroad];
     const scoreLabel  = SCORE_LABELS[score];
  
-    const callAPI = async (prompt) => {
-      const res = await fetch("api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-5",
-          max_tokens: 6000,
-          messages: [{ role: "user", content: prompt }],
-        }),
-      });
-      if (!res.ok) throw new Error(`API error ${res.status}`);
-      const data = await res.json();
-      const raw = data.content.map(i => i.text || "").join("");
-      return JSON.parse(raw.replace(/```json[\s\S]*?```|```/g, "").trim());
-    };
+ const callAPI = async (prompt) => {
+  const res = await fetch("/api/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-5",
+      max_tokens: 4000,
+      messages: [{ role: "user", content: prompt }],
+    }),
+  });
+  if (!res.ok) throw new Error(`API error ${res.status}`);
+  const data = await res.json();
+  const raw = data.content.map(i => i.text || "").join("").trim();
+  const match = raw.match(/\{[\s\S]*\}/);
+  if (!match) throw new Error("No JSON found in response");
+  return JSON.parse(match[0]);
+};
  
     try {
       // Call 1: careers, summary, action plan
