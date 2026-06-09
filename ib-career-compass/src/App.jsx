@@ -417,7 +417,7 @@ Return ONLY valid JSON, no markdown fences, no extra text:
       "tuition_fees": "e.g. $55,000 USD/year (international students; always express in USD)",
       "cost_of_living": "e.g. ~$1,200–1,600 USD/month (housing, food, transport; always express in USD)",
       "notable_programs": ["Program 1", "Program 2"],
-      "application_tips": "3-4 concise tips referencing IB Extended Essay, TOK, CAS, HL choices and AI-readiness signals.",
+      "application_tips": "1-3 concise tips referencing IB Extended Essay, TOK, CAS, HL choices and AI-readiness signals.",
       "language_requirements": "State the primary language of instruction. If non-English, name it and list any required proficiency test (e.g. DELF B2, DSH-2, HSK 5). If English-medium, list IELTS/TOEFL minimums. Note if bilingual or English-track options exist.",
       "scholarships": "Key scholarships"
     }
