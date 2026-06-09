@@ -447,36 +447,86 @@ export default function IBCareerCompass() {
     document.head.appendChild(s);
   });
  
-  const downloadPDF = async () => {
-    if (!resultsRef.current) return;
-    setPdfDownloading(true);
-    try {
-      await loadScript("https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js");
-      await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js");
-      const { jsPDF } = window.jspdf;
-      const canvas = await window.html2canvas(resultsRef.current, {
-        scale: 2, useCORS: true, backgroundColor: "#f4f3f8", logging: false,
-      });
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-      const pageW = pdf.internal.pageSize.getWidth();
-      const pageH = pdf.internal.pageSize.getHeight();
-      const imgW = pageW;
-      const imgH = (canvas.height * imgW) / canvas.width;
-      let yOffset = 0;
-      let remaining = imgH;
-      while (remaining > 0) {
-        pdf.addImage(imgData, "PNG", 0, -yOffset, imgW, imgH);
-        remaining -= pageH;
-        if (remaining > 0) { pdf.addPage(); yOffset += pageH; }
-      }
-      pdf.save("IB-Career-Compass-Report.pdf");
-    } catch (e) {
-      alert("PDF generation failed: " + e.message);
-    } finally {
-      setPdfDownloading(false);
+ const downloadPDF = async () => {
+  if (!result) return;
+  setPdfDownloading(true);
+  try {
+    await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js");
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    const pageW = pdf.internal.pageSize.getWidth();
+    const margin = 15;
+    const maxW = pageW - margin * 2;
+    let y = 20;
+
+    const checkPage = (needed = 10) => {
+      if (y + needed > 275) { pdf.addPage(); y = 20; }
+    };
+
+    const writeText = (text, size, style, color = [10, 10, 15]) => {
+      pdf.setFontSize(size);
+      pdf.setFont("helvetica", style);
+      pdf.setTextColor(...color);
+      const lines = pdf.splitTextToSize(String(text), maxW);
+      checkPage(lines.length * (size * 0.4));
+      pdf.text(lines, margin, y);
+      y += lines.length * (size * 0.4) + 2;
+    };
+
+    // Title
+    writeText("IB Career Compass Report", 22, "bold", [91, 77, 232]);
+    y += 4;
+
+    // Summary
+    if (result.summary) {
+      writeText(result.summary, 11, "normal", [60, 60, 80]);
+      y += 4;
     }
-  };
+
+    // Careers
+    writeText("Recommended Career Paths", 16, "bold", [10, 10, 15]);
+    y += 2;
+    (result.careers || []).forEach((c, i) => {
+      checkPage(30);
+      writeText(`${i + 1}. ${c.title}`, 13, "bold", [91, 77, 232]);
+      writeText(`Field: ${c.field}`, 10, "normal", [100, 100, 130]);
+      writeText(`AI Impact: ${c.ai_rationale}`, 10, "normal");
+      writeText(`Why it fits: ${c.why_fit}`, 10, "normal");
+      writeText(`Day-to-day by 2030: ${c.daily_life}`, 10, "normal");
+      writeText(`Outlook: ${c.outlook}  |  Salary: ${c.salary_range}`, 10, "italic", [80, 80, 100]);
+      y += 3;
+    });
+
+    // Universities
+    writeText("Recommended Universities", 16, "bold", [10, 10, 15]);
+    y += 2;
+    (result.universities || []).forEach((u, i) => {
+      checkPage(30);
+      writeText(`${i + 1}. ${u.name}`, 13, "bold", [91, 77, 232]);
+      writeText(`${u.city}, ${u.country}  |  Best for: ${u.for_career}`, 10, "normal", [100, 100, 130]);
+      writeText(`Acceptance rate: ${u.acceptance_rate}  |  IB requirement: ${u.ib_requirement}`, 10, "normal");
+      writeText(`Programs: ${(u.notable_programs || []).join(", ")}`, 10, "normal");
+      writeText(`How to get in: ${u.application_tips}`, 10, "normal");
+      if (u.scholarships) writeText(`Scholarships: ${u.scholarships}`, 10, "italic", [80, 80, 100]);
+      y += 3;
+    });
+
+    // Action Plan
+    if (result.action_plan?.length) {
+      writeText("Your Action Plan", 16, "bold", [10, 10, 15]);
+      y += 2;
+      result.action_plan.forEach((s, i) => {
+        writeText(`${i + 1}. ${s}`, 10, "normal");
+      });
+    }
+
+    pdf.save("IB-Career-Compass-Report.pdf");
+  } catch (e) {
+    alert("PDF generation failed: " + e.message);
+  } finally {
+    setPdfDownloading(false);
+  }
+};
  
   const toggle = useCallback((key, val) => {
     setSel(prev => {
