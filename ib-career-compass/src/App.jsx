@@ -486,46 +486,46 @@ export default function IBCareerCompass() {
   }, []);
  
   const generate = async () => {
-    setLoading(true);
-    setError("");
-    setResult(null);
-    setStep(99);
- 
-    const abroadLabel = ABROAD_LABELS[abroad];
-    const scoreLabel  = SCORE_LABELS[score];
- 
- const callAPI = async (prompt) => {
-  const res = await fetch("/api/chat", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-5",
-      max_tokens: 4000,
-      messages: [{ role: "user", content: prompt }],
-    }),
-  });
-  if (!res.ok) throw new Error(`API error ${res.status}`);
-  const data = await res.json();
-  const raw = data.content.map(i => i.text || "").join("").trim();
-  const match = raw.match(/\{[\s\S]*\}/);
-  if (!match) throw new Error("No JSON found in response");
-  return JSON.parse(match[0]);
-};
- 
-    try {
-      // Call 1: careers, summary, action plan
-      const part1 = await callAPI(buildCareersPrompt(sel, abroadLabel, scoreLabel, dream, careersInMind));
-      // Call 2: universities (uses career titles from call 1 for context)
-      const part2 = await callAPI(buildUnisPrompt(sel, abroadLabel, scoreLabel, dream, careersInMind, part1.careers || []));
-      setResult({ ...part1, universities: part2.universities || [] });
-      setStep(100);
-    } catch (e) {
-      setError(e.message);
-      setStep(100);
-    } finally {
-      setLoading(false);
-    }
+  setLoading(true);
+  setError("");
+  setResult(null);
+  setStep(99);
+
+  const abroadLabel = ABROAD_LABELS[abroad];
+  const scoreLabel  = SCORE_LABELS[score];
+
+  const callAPI = async (prompt) => {
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-5",
+        max_tokens: 4000,
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    const data = await res.json();
+    const raw = data.content.map(i => i.text || "").join("").trim();
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error("No JSON found in response");
+    return JSON.parse(match[0]);
   };
+
+  try {
+    const [part1, part2] = await Promise.all([
+      callAPI(buildCareersPrompt(sel, abroadLabel, scoreLabel, dream, careersInMind)),
+      callAPI(buildUnisPrompt(sel, abroadLabel, scoreLabel, dream, careersInMind, [])),
+    ]);
+    setResult({ ...part1, universities: part2.universities || [] });
+    setStep(100);
+  } catch (e) {
+    setError(e.message);
+    setStep(100);
+  } finally {
+    setLoading(false);
+  }
+};
  
   const restart = () => {
     setSel({ academics: [], skills: [], interests: [], values: [] });
