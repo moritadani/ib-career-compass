@@ -391,7 +391,7 @@ Return ONLY valid JSON, no markdown fences, no extra text:
     }
   ]
 }
-Return exactly 10 careers and exactly 4 ai_resilient entries. Keep all text fields concise (1-3 sentences max).`;
+Return exactly 10 careers and exactly 6 ai_resilient entries. Keep all text fields concise (1-3 sentences max).`;
  
 const buildUnisPrompt = (sel, abroad, score, dream, careersInMind, careers) =>
 `You are an expert university admissions advisor for IB Diploma students.
