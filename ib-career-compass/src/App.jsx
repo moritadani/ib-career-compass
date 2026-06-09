@@ -358,7 +358,7 @@ ${dream ? "- Dream future: " + dream : ""}
 ${careersInMind ? "- Already considering: " + careersInMind : ""}`;
  
 const buildCareersPrompt = (sel, abroad, score, dream, careersInMind) =>
-`You are an expert career counselor for IB Diploma students. Account for how generative AI will reshape careers in the next 5-10 years.
+`You are an expert career counselor for IB Diploma students. Account for how generative AI will reshape careers in the next 5-10 years. Return real, specific job titles.
  
 ${PROFILE(sel, abroad, score, dream, careersInMind)}
  
